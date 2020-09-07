@@ -5,6 +5,7 @@ if exists('g:loaded_nvim_treesitter')
 endif
 
 augroup NvimTreesitter
+  autocmd Filetype * :lua require('nvim-treesitter.configs').attach_ft_modules(vim.fn.expand("<amatch>"))
 augroup END
 
 let g:loaded_nvim_treesitter = 1

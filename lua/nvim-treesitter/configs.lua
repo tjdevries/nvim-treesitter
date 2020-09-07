@@ -5,7 +5,10 @@ local parsers = require'nvim-treesitter.parsers'
 local utils = require'nvim-treesitter.utils'
 local caching = require'nvim-treesitter.caching'
 
+
 local M = {}
+
+M.enabled_ft_modules = setmetatable({}, {__index = function(t, k) local obj = {}; rawset(t, k, obj) return obj end})
 
 local function has_some_textobject_mapping(lang)
   for _, v in pairs(M.get_module('textobjects.select').keymaps) do
@@ -132,14 +135,21 @@ local function enable_module(mod, bufnr, lang)
   M.attach_module(mod, bufnr, lang)
 end
 
-local function enable_mod_conf_autocmd(mod, lang)
+local function enable_mod_conf_ft(mod, lang)
   local config_mod = M.get_module(mod)
 
-  if not config_mod or not M.is_enabled(mod, lang) then return end
+  if not config_mod or not M.is_enabled(mod, lang) then
+    return
+  end
 
-  local cmd = string.format("lua require'nvim-treesitter.configs'.attach_module('%s')", mod)
+  local disabled = vim.tbl_values(config_mod.disable)
+
+  -- local cmd = string.format("lua require'nvim-treesitter.configs'.attach_module('%s')", mod)
   for _, ft in pairs(parsers.lang_to_ft(lang)) do
-    api.nvim_command(string.format("autocmd NvimTreesitter FileType %s %s", ft, cmd))
+    if M.enabled_ft_modules[ft][mod] == nil then
+      M.enabled_ft_modules[ft][mod] = true
+    end
+    -- api.nvim_command(string.format("autocmd NvimTreesitter FileType %s %s", ft, cmd))
   end
   for i, parser in pairs(config_mod.disable) do
     if parser == lang then
@@ -162,12 +172,12 @@ local function enable_all(mod, lang)
   end
   if lang then
     if parsers.has_parser(lang) then
-      enable_mod_conf_autocmd(mod, lang)
+      enable_mod_conf_ft(mod, lang)
     end
   else
     for _, lang in pairs(parsers.available_parsers()) do
       if parsers.has_parser(lang) then
-        enable_mod_conf_autocmd(mod, lang)
+        enable_mod_conf_ft(mod, lang)
       end
     end
   end
@@ -188,14 +198,13 @@ local function disable_module(mod, bufnr, lang)
   M.detach_module(mod, bufnr)
 end
 
-local function disable_mod_conf_autocmd(mod, lang)
+local function disable_mod_conf_ft(mod, lang)
   local config_mod = M.get_module(mod)
 
   if not config_mod or not M.is_enabled(mod, lang) then return end
 
-  -- TODO(kyazdani): detach the correct autocmd... doesn't work when using %s, cmd
   for _, ft in pairs(parsers.lang_to_ft(lang)) do
-    api.nvim_command(string.format("autocmd! NvimTreesitter FileType %s", ft))
+    M.enabled_ft_modules[ft][mod] = false
   end
   table.insert(config_mod.disable, lang)
 end
@@ -208,10 +217,10 @@ local function disable_all(mod, lang)
     end
   end
   if lang then
-    disable_mod_conf_autocmd(mod, lang)
+    disable_mod_conf_ft(mod, lang)
   else
     for _, lang in pairs(parsers.available_parsers()) do
-      disable_mod_conf_autocmd(mod, lang)
+      disable_mod_conf_ft(mod, lang)
     end
 
     local config_mod = M.get_module(mod)
@@ -285,8 +294,10 @@ function M.is_enabled(mod, lang)
     return false
   end
 
-  for _, parser in pairs(module_config.disable) do
-    if lang == parser then return false end
+  for _, parser in ipairs(module_config.disable) do
+    if lang == parser then
+      return false
+    end
   end
 
   return true
@@ -303,12 +314,12 @@ function M.setup(user_data)
       config.modules[name] = vim.tbl_deep_extend('force', config.modules[name] or {}, data)
 
       recurse_modules(function(_, _, new_path)
-        if data.enable then
-          enable_all(new_path)
+        for _, lang in ipairs(data.disable or {}) do
+          disable_mod_conf_ft(new_path, lang)
         end
 
-        for _, lang in ipairs(data.disable or {}) do
-          disable_mod_conf_autocmd(new_path, lang)
+        if data.enable then
+          enable_all(new_path)
         end
       end, config.modules)
     end
@@ -359,7 +370,15 @@ function M.define_modules(mod_defs)
 
   for _, lang in pairs(parsers.available_parsers()) do
     for _, mod in ipairs(M.available_modules(mod_defs)) do
-      enable_mod_conf_autocmd(mod, lang)
+      enable_mod_conf_ft(mod, lang)
+    end
+  end
+end
+
+function M.attach_ft_modules(ft)
+  for mod, enabled in pairs(M.enabled_ft_modules[ft]) do
+    if enabled then
+      M.attach_module(mod)
     end
   end
 end
