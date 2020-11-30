@@ -73,10 +73,10 @@ list.rust = {
 
 list.lua = {
   install_info = {
-    url = "https://github.com/nvim-treesitter/tree-sitter-lua",
-    files = { "src/parser.c", "src/scanner.cc" }
+    url = "https://github.com/tjdevries/tree-sitter-lua",
+    files = { "src/parser.c" }
   },
-  maintainers = {"@vigoux"},
+  maintainers = {"@tjdevries"},
 }
 
 list.python = {
