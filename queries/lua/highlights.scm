@@ -3,136 +3,153 @@
 ;;; Builtins
 ;; Keywords
 
-(if_statement
 [
-  "if"
-  "then"
-  "end"
-] @conditional)
+  (if_start)
+  (if_then)
+  (if_elseif)
+  (if_else)
+  (if_end)]
+@conditional
 
 [
-  "else"
-  "elseif"
-  "then"
-] @conditional
-
-(for_statement
-[
-  "for"
-  "do"
-  "end"
-] @repeat)
-
-(for_in_statement
-[
-  "for"
-  "do"
-  "end"
-] @repeat)
-
-(while_statement
-[
-  "while"
-  "do"
-  "end"
-] @repeat)
-
-(repeat_statement
-[
-  "repeat"
-  "until"
-] @repeat)
+  (for_start)
+  (for_in)
+  (for_do)
+  (for_end)]
+@repeat
 
 [
- "in"
- "local"
- "return"
- (break_statement)
- "goto"
+  (while_start)
+  (while_do)
+  (while_end)]
+@repeat
+
+[
+  (repeat_start)
+  (repeat_until)
+] @repeat
+
+[
+  (return_statement)
+  (module_return_statement)
 ] @keyword
 
+
+; [
+;  "goto"
+; ] @keyword
+
 ;; Operators
+
+; TODO: I think I've made a bunch of these nodes.
+;   we might be able to just use those!
 
 [
  "not"
  "and"
- "or"
-] @keyword.operator
+ "or"]
+@keyword.operator
 
 [
-"="
-"~="
-"=="
-"<="
-">="
-"<"
-">"
-"+"
-"-"
-"%"
-"/"
-"//"
-"*"
-"^"
-"&"
-"~"
-"|"
-">>"
-"<<"
-".."
-"#"
- ] @operator
+ "="
+ "~="
+ "=="
+ "<="
+ ">="
+ "<"
+ ">"
+ "+"
+ "-"
+ "%"
+ "/"
+ "//"
+ "*"
+ "^"
+ "&"
+ "~"
+ "|"
+ ">>"
+ "<<"
+ ".."
+ "#"]
+@operator
 
 ;; Punctuation
 [ "," "." ":"] @punctuation.delimiter
 
 ;; Brackets
 [
- "("
- ")"
+ (left_paren)
+ (right_paren)
  "["
  "]"
  "{"
- "}"
-] @punctuation.bracket
+ "}"]
+@punctuation.bracket
 
 ;; Variables
 (identifier) @variable
 
 ;; Constants
-[
-(false)
-(true)
-] @boolean
+(boolean) @boolean
 (nil) @constant.builtin
-(spread) @constant ;; "..."
+(ellipsis) @constant ;; "..."
+(local) @keyword
 
 ;; Functions
-(function [(function_name) (identifier)] @function)
-(function ["function" "end"] @keyword.function)
+(function_call_paren) @function.bracket
 
-(local_function (identifier) @function)
-(local_function ["function" "end"] @keyword.function)
+[
+  (function_start)
+  (function_end)]
+@keyword.function
 
-(function_definition ["function" "end"] @keyword.function)
+(emmy_type (identifier) @type)
+(emmy_parameter
+ (identifier) @parameter
+ description: (_)? @comment) @comment
 
-(property_identifier) @property
-(method) @method
+; TODO: Make the container so we can still highlight the beginning of the line
+; (emmy_eval_container) @comment
+; (_emmy_eval_container) @comment
 
-(function_call (identifier) @function . (arguments))
-(function_call (field_expression (property_identifier) @function) . (arguments))
+(emmy_return) @comment
+
+; TODO: returns
+
+(emmy_comment) @comment
+
+(function_call
+  [
+    ((identifier)+ @identifier . (identifier) @function.call . (function_call_paren))
+    ((identifier) @function.call . (function_call_paren))])
+
+(function_call
+  prefix: (identifier) @function.call
+  args: (string_argument) @string)
+
+; (function [(function_name) (identifier)] @function)
+; (function ["function" "end"] @keyword.function)
+; (local_function [(function_name) (identifier)] @function)
+; (local_function ["function" "end"] @keyword.function)
+; (function_definition ["function" "end"] @keyword.function)
+
+; TODO: Do I have replacements for these.
+; (property_identifier) @property
+; (method) @method
+
+; (function_call (identifier) @function . (arguments))
+; (function_call (field (property_identifier) @function) . (arguments))
 
 ;; Parameters
-(parameters
-  (identifier) @parameter)
+; (parameters (identifier) @parameter)
 
 ;; Nodes
-(table ["{" "}"] @constructor)
+; (table ["{" "}"] @constructor)
 (comment) @comment
 (string) @string
 (number) @number
-(label_statement) @label
-(shebang) @comment
+; (label_statement) @label
 
 ;; Error
 (ERROR) @error
