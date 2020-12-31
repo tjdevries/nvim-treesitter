@@ -32,6 +32,7 @@
 [
   (return_statement)
   (module_return_statement)
+  (break_statement)
 ] @keyword
 
 
@@ -89,6 +90,14 @@
 
 ;; Variables
 (identifier) @variable
+(
+  (identifier) @variable.builtin
+  (eq? @variable.builtin "self")
+)
+; (preproc_call
+;   directive: (preproc_directive) @_u
+;   argument: (_) @constant
+;   (#eq? @_u "#undef"))
 
 ;; Constants
 (boolean) @boolean
@@ -127,6 +136,10 @@
 (function_call
   prefix: (identifier) @function.call
   args: (string_argument) @string)
+
+(function_call
+ prefix: (identifier) @function.call
+ args: (table_argument) )
 
 ; (function [(function_name) (identifier)] @function)
 ; (function ["function" "end"] @keyword.function)
