@@ -126,7 +126,8 @@
 
 ; TODO: returns
 
-(emmy_comment) @comment
+(emmy_header) @comment
+(emmy_ignore) @comment
 
 (function_call
   [
